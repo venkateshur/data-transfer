@@ -56,10 +56,10 @@ object DataTransferApp extends App {
             outputBasePath + s"${tableMeta.tableName.replace(".", "_")}")
         case "csv" =>
           val headerDf = queryResult.columns.toSeq.toDF().toDF(queryResult.columns: _*)
-          writeCSVFile(headerDf.union(queryResult), "false", tempOutputDir)
+          writeCSVFile(headerDf.union(queryResult), "false", tempOutputDir, tableMeta.delimiter)
 
       }
-      val fileName = tableMeta.outputFileName.replace("DATE", currentDay)
+      val fileName = tableMeta.outputFileName
       val outPath = outputDir + fileName
       Common.mergeAndDeleteFiles(
         tempOutputDir,
@@ -109,7 +109,7 @@ object DataTransferApp extends App {
       val query = conf.getString("query").stripMargin
       val format = conf.getString("format")
       val outputDir = conf.getString("output-dir")
-      val outputFileName = conf.getString("output-file-name")
+      val outputFileName = conf.getString("output-file-name").replace("DATE", currentDay)
       val delimiter = conf.getString("delimiter")
       TableMeta(group, tableName, query, format, outputDir, outputFileName, delimiter)
     })

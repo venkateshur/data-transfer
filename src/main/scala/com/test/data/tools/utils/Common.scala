@@ -18,8 +18,8 @@ object Common {
 
   def readTableWithQuery(query: String)(implicit spark: SparkSession): DataFrame = spark.sql(query)
 
-  def writeCSVFile(inputDf: DataFrame, header: String, outputPath: String): Unit = {
-    inputDf.write.option("header", header).format("csv").mode("overwrite")
+  def writeCSVFile(inputDf: DataFrame, header: String, outputPath: String, delimiter: String): Unit = {
+    inputDf.write.option("header", header).option("delimiter", delimiter).format("csv").mode("overwrite")
       .save(outputPath)
   }
 
