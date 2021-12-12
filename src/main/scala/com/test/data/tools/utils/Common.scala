@@ -52,7 +52,7 @@ object Common {
     }
   }
 
-  def streamZipCommands(inPath: String, outputPath: String) = {
+  def streamZipCommands(inPath: String, outputPath: String): String = {
     s"""hadoop jar contrib/streaming/hadoop-streaming-1.0.3.jar \
        |            -Dmapred.reduce.tasks=0 \
        |            -Dmapred.output.compress=true \
@@ -73,7 +73,7 @@ object Common {
   }
 
   def s3MakeDirCommands(awsAccessKey: String, awsSecretKey: String, endPoint: String, s3Bucket: String, s3Prefix: String): String = {
-    //TODO build hdfs cp command
+    //TODO build hdfs mkdir command
     s"""""".stripMargin
 
   }
