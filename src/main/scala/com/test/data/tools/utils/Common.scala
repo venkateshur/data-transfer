@@ -4,7 +4,6 @@ package com.test.data.tools.utils
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.sql.{DataFrame, SparkSession}
-
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.IOUtils
@@ -14,6 +13,7 @@ import org.slf4j.Logger
 
 import scala.sys.process._
 import scala.util.{Failure, Success, Try}
+import org.apache.hadoop.io.compress.{CompressionCodecFactory, CompressionOutputStream}
 
 object Common {
 
@@ -107,6 +107,11 @@ object Common {
     if (srcFS.getFileStatus(srcDir).isDirectory()) {
 
       val outputFile = dstFS.create(dstFile)
+
+      val factory = new CompressionCodecFactory(conf)
+      val codec = factory.getCodecByClassName("org.apache.hadoop.io.compress.GzipCodec")
+      val compressionOutputStream = codec.createOutputStream(outputFile)
+
       Try {
         srcFS
           .listStatus(srcDir)
@@ -114,7 +119,7 @@ object Common {
           .collect {
             case status if status.isFile() =>
               val inputFile = srcFS.open(status.getPath())
-              Try(IOUtils.copyBytes(inputFile, outputFile, conf, false))
+              Try(IOUtils.copyBytes(inputFile, compressionOutputStream, conf, false))
               inputFile.close()
           }
       }
