@@ -8,8 +8,11 @@ import com.test.data.tools.utils.Common
 import com.test.data.tools.utils.Common.{loadConfig, writeCSVFile, writeTextFile}
 import com.typesafe.config.Config
 import org.apache.hadoop.fs.FileSystem
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import scala.collection.JavaConverters._
+
 import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success, Try}
@@ -43,7 +46,7 @@ object DataTransferApp extends App {
       config.getString("aws.end-point"), config.getString("aws.s3-history-bucket"),
       config.getString("aws.s3-bucket"), "", currentDay)
 
-    val outputBasePath = s"${config.getString("output-path")}/processed_time=$currentDay/"
+    val outputBasePath = s"${config.getString("output-dir")}/processed_time=$currentDay/"
     val listOfZippedFiles = tables.map { tableMeta => {
       val queryResult = Common.readTableWithQuery(tableMeta.query)
 
@@ -55,7 +58,11 @@ object DataTransferApp extends App {
           writeTextFile(queryResult.select(concat_ws(tableMeta.delimiter, queryResult.columns.map(col): _*)),
             outputBasePath + s"${tableMeta.tableName.replace(".", "_")}")
         case "csv" =>
-          val headerDf = queryResult.columns.toSeq.toDF().toDF(queryResult.columns: _*)
+          val headerDf = spark.createDataFrame(
+            List(Row.fromSeq(queryResult.columns.toSeq)).asJava,
+            StructType(queryResult.schema.fields.map(field =>
+              StructField(field.name, StringType, field.nullable))))
+
           writeCSVFile(headerDf.union(queryResult), "false", tempOutputDir, tableMeta.delimiter)
 
       }
@@ -108,10 +115,9 @@ object DataTransferApp extends App {
       val tableName = conf.getString("name")
       val query = conf.getString("query").stripMargin
       val format = conf.getString("format")
-      val outputDir = conf.getString("output-dir")
-      val outputFileName = conf.getString("output-file-name").replace("DATE", currentDay)
+      val outputFileName = conf.getString("file-name").replace("DATE", currentDay)
       val delimiter = conf.getString("delimiter")
-      TableMeta(group, tableName, query, format, outputDir, outputFileName, delimiter)
+      TableMeta(group, tableName, query, format, outputFileName, delimiter)
     })
   }
 }
